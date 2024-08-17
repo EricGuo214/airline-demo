@@ -21,7 +21,7 @@
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 50px; /* Adds space at the bottom for the button */
+  margin-bottom: 50px; 
 }
 
 .predict-button {
@@ -98,7 +98,7 @@ p {
 
 .logo {
   height: 60px;
-  width: 150px; /* Increase the width as needed */
+  width: 150px; 
 }
 
 nav {
@@ -135,7 +135,7 @@ nav ul li a:hover {
   grid-template-areas: 
     "table table predict"
     "accuracy accuracy predict";
-  grid-template-columns: 3fr 3fr 4fr; /* Adjust columns to make predict wider */
+  grid-template-columns: 3fr 3fr 4fr;
   grid-template-rows: 2fr 1fr;
   gap: 20px;
   padding: 20px;
@@ -171,7 +171,6 @@ nav ul li a:hover {
 }
 
 
-/* Styling for the tables */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -188,7 +187,7 @@ th, td {
   font-size: 0.9em;
 }
 
-/* Adjust the grid layout to accommodate the new table sizes */
+
 .accuracy-page {
   display: grid;
   grid-template-areas: 
@@ -267,13 +266,13 @@ label {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Three equal columns */
-  grid-template-rows: repeat(3, auto); /* Auto-adjusting rows */
+  grid-template-columns: repeat(4, 1fr); 
+  grid-template-rows: repeat(3, auto); 
   grid-template-areas: 
     "input1 input2 input3 input4"
     "input5 input6 map map"
     "input8 input9 input10 input11";
-  gap: 20px; /* Space between the grid items */
+  gap: 20px;
   position: relative;
 }
 
@@ -285,13 +284,13 @@ label {
 }
 
 .map-container {
-  grid-area: map; /* Place the map in the bottom right */
+  grid-area: map; 
 }
 
 .predict-button {
   position: absolute;
-  bottom: -50px; /* Move the button below the map */
-  right: 20px; /* Align to the bottom right of the container */
+  bottom: -50px; 
+  right: 20px; 
   padding: 10px 20px;
   font-size: 14px;
   background-color: #d32f2f;
@@ -307,7 +306,7 @@ label {
 
 .leaflet-container {
   width: 100%;
-  height: 300px; /* Adjust height as needed */
+  height: 300px; 
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
