@@ -145,7 +145,7 @@ nav ul li a:hover {
 
 .table-container {
   grid-area: table;
-  border: 2px solid #000;
+  /* border: 2px solid #000; */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -163,7 +163,7 @@ nav ul li a:hover {
 
 .accuracy-container {
   grid-area: accuracy;
-  border: 2px solid #000;
+  /* border: 2px solid #000; */
   display: flex;
   justify-content: center;
   align-items: center;
