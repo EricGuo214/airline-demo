@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Link, Routes } from 'react-router-dom';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
-import { predictFlightDelay, getAccuracyData } from './services/api'; // Import mock API functions
+import { predictFlightDelay, getAccuracyData } from './services/api';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 import oracleLogo from './ologo.png';
