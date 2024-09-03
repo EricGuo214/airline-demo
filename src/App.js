@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
+import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/react';
+import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 import oracleLogo from './ologo.png';
@@ -8,8 +10,12 @@ import image2 from './image2.png';
 import image3 from './image3.jpg';
 import image4 from './image4.png';
 import shapImage from './SHAP.png';
-import airlineImage from './airline.jpg'; 
-import weatherImage from './weather.png'; 
+import airlineImage from './airline.jpg';
+import weatherImage from './weather.png';
+
+function classNames(...classes) {
+  return classes.filter(Boolean).join(' ');
+}
 
 function Modal({ title, children, onClose }) {
   return (
@@ -17,18 +23,48 @@ function Modal({ title, children, onClose }) {
       <div className="popup-content">
         <h3>{title}</h3>
         {children}
-        <button onClick={onClose} className="close-popup-button">Close</button>
+        <button
+          type="button"
+          className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+          onClick={onClose}
+        >
+          Close
+        </button>
       </div>
     </div>
   );
 }
 
+
+const airlines = [
+  { id: 'DL', name: 'Delta Airlines' },
+  { id: 'AA', name: 'American Airlines' },
+  { id: 'UA', name: 'United Airlines' },
+  { id: 'SW', name: 'Southwest Airlines' },
+  { id: 'AS', name: 'Alaska Airlines' },
+];
+
+const flightNumbers = {
+  'DL': ['DL1234', 'DL5678', 'DL9101'],
+  'AA': ['AA2345', 'AA6789', 'AA1011'],
+  'UA': ['UA3456', 'UA7890', 'UA1121'],
+  'SW': ['SW4567', 'SW8901', 'SW1213'],
+  'AS': ['AS5678', 'AS9012', 'AS1314']
+};
+
+const route = [
+  [40.6413, -73.7781],
+  [33.9416, -118.4085]
+];
+
 function MultiStepForm() {
   const [step, setStep] = useState(1);
-
-  const [airline, setAirline] = useState('');
-  const [flightNumber, setFlightNumber] = useState('');
+  const [airline, setAirline] = useState(null);
+  const [flightNumber, setFlightNumber] = useState(null);
   const [weather, setWeather] = useState({
+    temperature: '',
+    humidity: '',
+    windSpeed: '',
     originAltimeterSetting: '',
     destinationAltimeterSetting: '',
     originDewPointTemperature: '',
@@ -44,8 +80,9 @@ function MultiStepForm() {
     originVisibility: '',
     destinationVisibility: '',
     originWindSpeed: '',
-    destinationWindSpeed: ''
+    destinationWindSpeed: '',
   });
+
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [weekday, setWeekday] = useState('');
@@ -53,37 +90,44 @@ function MultiStepForm() {
   const [arrivalTime, setArrivalTime] = useState('');
   const [turnaroundTime, setTurnaroundTime] = useState('');
   const [elapsedTime, setElapsedTime] = useState('');
-
   const [modelResult, setModelResult] = useState('');
   const [shapValues, setShapValues] = useState('');
   const [insights, setInsights] = useState('');
   const [showAirlineModal, setShowAirlineModal] = useState(false);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
+  const [airlineQuery, setAirlineQuery] = useState('');
+  const [flightQuery, setFlightQuery] = useState('');
 
+  
   const steps = [
-    { id: 'Step 1', name: 'Airline Information', href: '#', status: step > 1 ? 'complete' : 'current' },
-    { id: 'Step 2', name: 'Weather Information', href: '#', status: step > 2 ? 'complete' : step === 2 ? 'current' : 'upcoming' },
-    { id: 'Step 3', name: 'Model Results', href: '#', status: step > 3 ? 'complete' : step === 3 ? 'current' : 'upcoming' },
-    { id: 'Step 4', name: 'Actionable Insights', href: '#', status: step === 4 ? 'current' : 'upcoming' }
+    { name: 'Step 1', status: step > 1 ? 'complete' : 'current' },
+    { name: 'Step 2', status: step > 2 ? 'complete' : step === 2 ? 'current' : 'upcoming' },
+    { name: 'Step 3', status: step > 3 ? 'complete' : step === 3 ? 'current' : 'upcoming' },
+    { name: 'Step 4', status: step === 4 ? 'current' : 'upcoming' }
   ];
 
-  const flightNumbers = {
-    'DL - Delta Airlines': ['DL1234', 'DL5678', 'DL9101'],
-    'AA - American Airlines': ['AA2345', 'AA6789', 'AA1011'],
-    'UA - United Airlines': ['UA3456', 'UA7890', 'UA1121'],
-    'SW - Southwest Airlines': ['SW4567', 'SW8901', 'SW1213'],
-    'AS - Alaska Airlines': ['AS5678', 'AS9012', 'AS1314']
+  const filteredAirlines =
+    airlineQuery === ''
+      ? airlines
+      : airlines.filter((airline) => airline.name.toLowerCase().includes(airlineQuery.toLowerCase()));
+
+  const filteredFlights =
+    flightQuery === ''
+      ? (airline ? flightNumbers[airline.id] : [])
+      : (airline ? flightNumbers[airline.id].filter((flight) => flight.toLowerCase().includes(flightQuery.toLowerCase())) : []);
+
+  const handleNextStep = () => {
+    setStep((prevStep) => prevStep + 1);
   };
 
-  const route = [
-    [40.6413, -73.7781],
-    [33.9416, -118.4085]
-  ];
+  const handleBackStep = () => {
+    setStep((prevStep) => prevStep - 1);
+  };
 
   useEffect(() => {
     if (step === 1) {
       const data = {
-        airline: 'Delta Airlines',
+        airline: airlines[0],
         flightNumber: 'DL1234',
       };
       setAirline(data.airline);
@@ -92,7 +136,7 @@ function MultiStepForm() {
 
     if (step === 2) {
       const data = {
-        airline: 'Delta Airlines',
+        airline: airlines[0],
         flightNumber: 'DL1234',
         origin: 'JFK',
         destination: 'LAX',
@@ -160,19 +204,6 @@ function MultiStepForm() {
     }
   }, [showWeatherModal]);
 
-  const handleAirlineChange = (e) => {
-    setAirline(e.target.value);
-    setFlightNumber(''); 
-  };
-
-  const handleNextStep = () => {
-    setStep((prevStep) => prevStep + 1);
-  };
-
-  const handleBackStep = () => {
-    setStep((prevStep) => prevStep - 1);
-  };
-
   return (
     <div className="App">
       <header className="header-bar">
@@ -180,45 +211,90 @@ function MultiStepForm() {
       </header>
       <div className="App-content">
         {step === 1 && (
-          <div className="step-container page-1">
+          <div className="step-container page-1 bg-white">
             <div className="image-placeholder">
-              <img src={image1} alt="Image 1" className="circle-image" />
+              <img src={image1} alt="Image 1" className="rounded-full w-36 h-36 object-cover mx-auto mb-5" />
             </div>
-            <div className="input-container">
-              <select
-                value={airline}
-                onChange={handleAirlineChange}
-                className="input-field"
-              >
-                <option value="">Select Airline</option>
-                <option value="DL - Delta Airlines">DL - Delta Airlines</option>
-                <option value="AA - American Airlines">AA - American Airlines</option>
-                <option value="UA - United Airlines">UA - United Airlines</option>
-                <option value="SW - Southwest Airlines">SW - Southwest Airlines</option>
-                <option value="AS - Alaska Airlines">AS - Alaska Airlines</option>
-              </select>
-              <select
-                value={flightNumber}
-                onChange={(e) => setFlightNumber(e.target.value)}
-                className="input-field"
-              >
-                <option value="">Select Flight Number</option>
-                {airline &&
-                  flightNumbers[airline]?.map((flight, index) => (
-                    <option key={index} value={flight}>
-                      {flight}
-                    </option>
-                  ))}
-              </select>
-              <button onClick={handleNextStep} className="get-flight-info-button">Get Flight Info</button>
+            <div className="input-container flex justify-center items-center space-x-4 absolute inset-x-0 top-1/2">
+              <Combobox as="div" value={airline} onChange={setAirline}>
+                <Combobox.Label className="block text-sm font-medium leading-6 text-gray-900">Select Airline</Combobox.Label>
+                <div className="relative mt-2">
+                  <ComboboxInput
+                    className="w-full rounded-md border-0 bg-white py-1.5 pl-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm sm:leading-6"
+                    onChange={(event) => setAirlineQuery(event.target.value)}
+                    displayValue={(airline) => airline?.name}
+                  />
+                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+                    <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </ComboboxButton>
+
+                  {filteredAirlines.length > 0 && (
+                    <ComboboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                      {filteredAirlines.map((airline) => (
+                        <ComboboxOption
+                          key={airline.id}
+                          value={airline}
+                          className="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 data-[focus]:bg-red-600 data-[focus]:text-white"
+                        >
+                          <span className="block truncate group-data-[selected]:font-semibold">{airline.name}</span>
+                          <span className="absolute inset-y-0 right-0 hidden items-center pr-4 text-red-600 group-data-[selected]:flex group-data-[focus]:text-white">
+                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                          </span>
+                        </ComboboxOption>
+                      ))}
+                    </ComboboxOptions>
+                  )}
+                </div>
+              </Combobox>
+
+              <Combobox as="div" value={flightNumber} onChange={setFlightNumber}>
+                <Combobox.Label className="block text-sm font-medium leading-6 text-gray-900">Select Flight Number</Combobox.Label>
+                <div className="relative mt-2">
+                  <ComboboxInput
+                    className="w-full rounded-md border-0 bg-white py-1.5 pl-3 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm sm:leading-6"
+                    onChange={(event) => setFlightQuery(event.target.value)}
+                    displayValue={(flightNumber) => flightNumber}
+                  />
+                  <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+                    <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </ComboboxButton>
+
+                  {filteredFlights.length > 0 && (
+                    <ComboboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                      {filteredFlights.map((flight, index) => (
+                        <ComboboxOption
+                          key={index}
+                          value={flight}
+                          className="group relative cursor-default select-none py-2 pl-3 pr-9 text-gray-900 data-[focus]:bg-red-600 data-[focus]:text-white"
+                        >
+                          <span className="block truncate group-data-[selected]:font-semibold">{flight}</span>
+                          <span className="absolute inset-y-0 right-0 hidden items-center pr-4 text-red-600 group-data-[selected]:flex group-data-[focus]:text-white">
+                            <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                          </span>
+                        </ComboboxOption>
+                      ))}
+                    </ComboboxOptions>
+                  )}
+                </div>
+              </Combobox>
+
             </div>
+
+            <button
+              type="button"
+              className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+              onClick={handleNextStep}
+            >
+              Get Flight Info
+            </button>
+
           </div>
         )}
 
         {step === 2 && (
-          <div className="step-container page-2">
+          <div className="step-container page-2 relative z-10">
             <div className="image-placeholder">
-              <img src={image2} alt="Image 2" className="circle-image" />
+              <img src={image2} alt="Image 2" className="rounded-full w-36 h-36 object-cover mx-auto" />
             </div>
             <div className="info-map-container">
               <div className="info-container">
@@ -226,16 +302,20 @@ function MultiStepForm() {
                   <div className="info-header">
                     <h3 className="info-title">Airline Information</h3>
                     <img src={airlineImage} alt="Airline" className="header-image" />
-                    <button className="see-more-button" onClick={() => setShowAirlineModal(true)}>
+                    <button
+                      type="button"
+                      className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                      onClick={() => setShowAirlineModal(true)}
+                    >
                       See More
                     </button>
                   </div>
-                  <div className="input-row">
+                  <div className="input-row h-12">
                     <div className="input-group">
                       <label>Airline</label>
                       <input
                         type="text"
-                        value={airline}
+                        value={airline?.name}
                         onChange={(e) => setAirline(e.target.value)}
                         className="info-input"
                         readOnly
@@ -264,7 +344,6 @@ function MultiStepForm() {
                         readOnly
                         disabled
                       />
-  
                     </div>
                     <div className="input-group">
                       <label>Destination</label>
@@ -283,11 +362,15 @@ function MultiStepForm() {
                   <div className="info-header">
                     <h3>Weather Information</h3>
                     <img src={weatherImage} alt="Weather" className="header-image" />
-                    <button className="see-more-button" onClick={() => setShowWeatherModal(true)}>
+                    <button
+                      type="button"
+                      className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                      onClick={() => setShowWeatherModal(true)}
+                    >
                       See More
                     </button>
                   </div>
-                  <div className="input-row">
+                  <div className="input-row h-12">
                     <div className="input-group">
                       <label>Temperature</label>
                       <input
@@ -326,17 +409,29 @@ function MultiStepForm() {
                 </MapContainer>
               </div>
             </div>
-            <div className="button-container">
-              <button onClick={handleBackStep} className="back-button">Airline and Flight Number</button>
-              <button onClick={handleNextStep} className="next-button">Model Results</button>
+            <div className="button-container absolute bottom-0 left-5 right-5 pt-10">
+              <button
+                type="button"
+                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
+                onClick={handleBackStep}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
+                onClick={handleNextStep}
+              >
+                Model Results
+              </button>
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="step-container page-3">
+          <div className="step-container page-3 relative z-10">
             <div className="image-placeholder">
-              <img src={image3} alt="Image 3" className="circle-image" />
+              <img src={image3} alt="Image 3" className="rounded-full w-36 h-36 object-cover mx-auto mb-5" />
             </div>
             <div className="results-container">
               <div className="info-box results-box full-width">
@@ -354,31 +449,48 @@ function MultiStepForm() {
                 <img src={shapImage} alt="SHAP Values" className="shap-image" />
               </div>
             </div>
-            <div className="button-container">
-              <button onClick={handleBackStep} className="back-button">Edit Information</button>
-              <button onClick={handleNextStep} className="next-button">Get Insights</button>
+            <div className="button-container absolute bottom-0 left-5 right-5 pt-10">
+              <button
+                type="button"
+                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
+                onClick={handleBackStep}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
+                onClick={handleNextStep}
+              >
+                Get Insights
+              </button>
             </div>
           </div>
         )}
 
         {step === 4 && (
-          <div className="step-container page-4">
-            <div className="image-placeholder4">
-              <img src={image4} alt="Image 4" className="circle-image" />
+          <div className="step-container page-4 relative z-10">
+            <div className="image-placeholder">
+              <img src={image4} alt="Image 4" className="rounded-full w-36 h-36 object-cover mx-auto mb-5" />
             </div>
-            <div className="results-container">
+            <div className="results-container4">
               <div className="info-box results-box">
                 <h3 className="info-title">Actionable Insights</h3>
                 <p>{insights}</p>
               </div>
             </div>
-            <div className="button-container">
-              <button onClick={handleBackStep} className="back-button">Model Results</button>
+            <div className="button-container absolute bottom-0 left-5 right-5 pt-10">
+              <button
+                type="button"
+                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
+                onClick={handleBackStep}
+              >
+                Back
+              </button>
             </div>
           </div>
         )}
 
-        
         {showAirlineModal && (
           <Modal title="Airline Information" onClose={() => setShowAirlineModal(false)}>
             <div className="input-row-2">
@@ -435,7 +547,6 @@ function MultiStepForm() {
           </Modal>
         )}
 
-        
         {showWeatherModal && (
           <Modal title="Weather Information" onClose={() => setShowWeatherModal(false)}>
             <div className="input-row-4">
@@ -593,36 +704,61 @@ function MultiStepForm() {
           </Modal>
         )}
       </div>
-      <div className="progress-container">
+
+      <div className="progress-container flex justify-center absolute bottom-0 left-0 w-full p-2 z-100">
         <nav aria-label="Progress">
-          <ol role="list" className="space-y-4 md:flex md:space-x-8 md:space-y-0">
-            {steps.map((step) => (
-              <li key={step.name} className="md:flex-1">
+          <ol role="list" className="flex items-center">
+            {steps.map((step, stepIdx) => (
+              <li key={step.name} className={classNames(stepIdx !== steps.length - 1 ? 'pr-8 sm:pr-20' : '', 'relative')}>
                 {step.status === 'complete' ? (
-                  <a
-                    href={step.href}
-                    className="group flex flex-col border-l-4 border-indigo-600 py-2 pl-4 hover:border-indigo-800 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4"
-                  >
-                    <span className="text-sm font-medium text-indigo-600 group-hover:text-indigo-800">{step.id}</span>
-                    <span className="text-sm font-medium">{step.name}</span>
-                  </a>
+                  <>
+                    {stepIdx !== steps.length - 1 && (
+                      <div aria-hidden="true" className="absolute inset-0 flex items-center">
+                        <div className="h-0.5 w-full bg-red-600" />
+                      </div>
+                    )}
+                    <a
+                      href="#"
+                      className="relative flex h-8 w-8 items-center justify-center rounded-full bg-red-600 hover:bg-red-900"
+                    >
+                      <CheckIcon aria-hidden="true" className="h-5 w-5 text-white" />
+                      <span className="sr-only">{step.name}</span>
+                    </a>
+                  </>
                 ) : step.status === 'current' ? (
-                  <a
-                    href={step.href}
-                    aria-current="step"
-                    className="flex flex-col border-l-4 border-indigo-600 py-2 pl-4 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4"
-                  >
-                    <span className="text-sm font-medium text-indigo-600">{step.id}</span>
-                    <span className="text-sm font-medium">{step.name}</span>
-                  </a>
+                  <>
+                    {stepIdx !== steps.length - 1 && (
+                      <div aria-hidden="true" className="absolute inset-0 flex items-center">
+                        <div className="h-0.5 w-full bg-gray-200" />
+                      </div>
+                    )}
+                    <a
+                      href="#"
+                      aria-current="step"
+                      className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-red-600 bg-white"
+                    >
+                      <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-red-600" />
+                      <span className="sr-only">{step.name}</span>
+                    </a>
+                  </>
                 ) : (
-                  <a
-                    href={step.href}
-                    className="group flex flex-col border-l-4 border-gray-200 py-2 pl-4 hover:border-gray-300 md:border-l-0 md:border-t-4 md:pb-0 md:pl-0 md:pt-4"
-                  >
-                    <span className="text-sm font-medium text-gray-500 group-hover:text-gray-700">{step.id}</span>
-                    <span className="text-sm font-medium">{step.name}</span>
-                  </a>
+                  <>
+                    {stepIdx !== steps.length - 1 && (
+                      <div aria-hidden="true" className="absolute inset-0 flex items-center">
+                        <div className="h-0.5 w-full bg-gray-200" />
+                      </div>
+                    )}
+                    <a
+                      href="#"
+                      className="group relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-gray-400"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-2.5 w-2.5 rounded-full bg-transparent group-hover:bg-gray-300"
+                      />
+                      <span className="sr-only">{step.name}</span>
+                    </a>
+                  </>
                 )}
               </li>
             ))}
