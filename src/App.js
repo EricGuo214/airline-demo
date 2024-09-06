@@ -533,7 +533,7 @@ function MultiStepForm() {
                 />
               </div>
             </div>
-            <div className="input-row-2">
+            {/* <div className="input-row-2">
               <div className="input-group">
                 <label>Elapsed Time</label>
                 <input
@@ -543,7 +543,7 @@ function MultiStepForm() {
                   className="info-input"
                 />
               </div>
-            </div>
+            </div> */}
           </Modal>
         )}
 
