@@ -1,4 +1,7 @@
 // src/services/api.js
+import useSWR from 'swr';
+
+import {fetcher, poster} from './config';
 
 export const predictFlightDelay = async (flightData) => {
     try {
@@ -20,6 +23,18 @@ export const predictFlightDelay = async (flightData) => {
       console.error('There was a problem with the fetch operation:', error);
       return null;
     }
+  };
+
+export const getFlightInfo = async (airline, flight_number ) => {
+  console.log('aquic')
+  const data = await fetcher(`flight_info?airline=${airline}&flight_number=${flight_number}`);
+  console.log('what')
+  console.log({data})
+  return {
+    data: data,
+    isLoading: !data,
+    // isError: error,
+  };
   };
   
   export const getAccuracyData = async () => {
