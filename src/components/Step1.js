@@ -11,6 +11,8 @@ function Step1({setAirline, setFlightNumber, airline, flightNumber, setAirlineQu
         setValue,
         formState: { errors },
       } = useForm();
+
+      console.log({airline, flightNumber, filteredAirlines, filteredFlights})
     
     return (
       <>
