@@ -3,39 +3,20 @@ import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
 import oracleLogo from './ologo.png';
-import image3 from './image3.jpg';
-import image4 from './image4.png';
-import shapImage from './SHAP.png';
 
 import { set, useForm } from 'react-hook-form';
 import Step1 from './components/Step1';
 import Step2 from './components/Step2';
+import Step3 from './components/Step3';
+import Step4 from './components/Step4';
 import AirlineInfoModal from './components/AirlineInfoModal';
+import WeatherInfoModel from './components/WeatherInfoModel';
 
 
-import { getFlightInfo } from './services/api.js';
+import { getFlightInfo, predictFlightDelay, getAirlinesWithFlights } from './services/api.js';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
-}
-
-
-function Modal({ title, children, onClose }) {
-  return (
-    <div className="popup-overlay">
-      <div className="popup-content">
-        <h3>{title}</h3>
-        {children}
-        <button
-          type="button"
-          className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-          onClick={onClose}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
 }
 
 
@@ -45,49 +26,44 @@ const airlines = [
   { id: 'UA', name: 'United Airlines' },
   { id: 'SW', name: 'Southwest Airlines' },
   { id: 'AS', name: 'Alaska Airlines' },
+  { id: 'B6', name: 'JetBlue Airways' },
+  { id: 'WN', name: 'Southwest Airlines' },
+  { id: 'F9', name: 'Frontier Airlines' },
+  { id: 'NK', name: 'Spirit Airlines' },
+  { id: 'G4', name: 'Allegiant Air' },
+  { id: 'HA', name: 'Hawaiian Airlines' },
+  { id: 'VX', name: 'Virgin America' },
+  { id: 'SY', name: 'Sun Country Airlines'}
 ];
-
-const flightNumbers = {
-  'DL': ['DL1234', 'DL5678', 'DL9101'],
-  'AA': ['AA2345', 'AA6789', 'AA1011'],
-  'UA': ['UA3456', 'UA7890', 'UA1121'],
-  'SW': ['SW4567', 'SW8901', 'SW1213'],
-  'AS': ['AS5678', 'AS9012', 'AS1314']
-};
 
 
 function MultiStepForm() {
-  const {
-    register,
-    handleSubmit,
-    control,
-    setValue,
-    formState: { errors },
-  } = useForm();
   const [step, setStep] = useState(1);
   const [airline, setAirline] = useState(null);
   const [flightNumber, setFlightNumber] = useState(null);
   const [weather, setWeather] = useState({
     temperature: '',
     humidity: '',
-    windSpeed: '',
-    originAltimeterSetting: '',
-    destinationAltimeterSetting: '',
-    originDewPointTemperature: '',
-    destinationDewPointTemperature: '',
-    originStationPressure: '',
-    destinationStationPressure: '',
-    originWetBulbTemperature: '',
-    destinationWetBulbTemperature: '',
-    originDryBulbTemperature: '',
-    destinationDryBulbTemperature: '',
-    originRelativeHumidity: '',
-    destinationRelativeHumidity: '',
-    originVisibility: '',
-    destinationVisibility: '',
-    originWindSpeed: '',
-    destinationWindSpeed: '',
+    // windSpeed: '',
+    // originAltimeterSetting: '',
+    // destinationAltimeterSetting: '',
+    // originDewPointTemperature: '',
+    // destinationDewPointTemperature: '',
+    // originStationPressure: '',
+    // destinationStationPressure: '',
+    // originWetBulbTemperature: '',
+    // destinationWetBulbTemperature: '',
+    // originDryBulbTemperature: '',
+    // destinationDryBulbTemperature: '',
+    // originRelativeHumidity: '',
+    // destinationRelativeHumidity: '',
+    // originVisibility: '',
+    // destinationVisibility: '',
+    // originWindSpeed: '',
+    // destinationWindSpeed: '',
   });
+  const [airlinesWithFlights, setAirlinesWithFlights] = useState([]);
+  const [flightNumbers, setFlightNumbers] = useState({});
   const [loading, setLoading] = useState(false);
 
   const [origin, setOrigin] = useState('');
@@ -98,13 +74,52 @@ function MultiStepForm() {
   const [turnaroundTime, setTurnaroundTime] = useState('');
   const [elapsedTime, setElapsedTime] = useState('');
   const [modelResult, setModelResult] = useState('');
-  const [shapValues, setShapValues] = useState('');
+  // const [shapValues, setShapValues] = useState('');
   const [insights, setInsights] = useState('');
   const [showAirlineModal, setShowAirlineModal] = useState(false);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
   const [airlineQuery, setAirlineQuery] = useState('');
   const [flightQuery, setFlightQuery] = useState('');
   const [flightData, setFlightData] = useState(null);
+  const [prediction, setPrediction] = useState(null);
+  const [featureNames, setFeatureNames] = useState(null);
+  const [shapValues, setShapValues] = useState(null);
+
+
+  const [filteredAirlines, setFilteredAirlines] = useState([]);
+  const [filteredFlights, setFilteredFlights] = useState([]);
+
+  useEffect(() => {
+    const fetchAirlines = async () => {
+      const data = await getAirlinesWithFlights();
+      console.log('what')
+      console.log({data})
+      console.log('whiiiiis')
+      setFlightNumbers(data.data.airlines);
+    };
+    fetchAirlines();
+  }, []);
+
+
+  useEffect(() => {
+    const filteredAirlines =
+    airlineQuery === ''
+      ? airlines
+      : airlines.filter((airline) => airline.name.toLowerCase().includes(airlineQuery.toLowerCase()));
+    setFilteredAirlines(filteredAirlines);
+
+  const filteredFlights =
+    flightQuery === ''
+      ? (airline ? flightNumbers[airline.id] : [])
+      : (airline ? flightNumbers[airline.id].filter((flight) => flight.toLowerCase().includes(flightQuery.toLowerCase())) : []);
+    setFilteredFlights(filteredFlights);
+    
+  }, [airlineQuery, flightQuery, flightNumbers, airline]);
+
+  useEffect(() => {
+    setFlightNumber(null);
+    
+  }, [airline]);
 
   // console.log('rendering')
   // console.log({flightData})
@@ -117,33 +132,35 @@ function MultiStepForm() {
     { name: 'Step 1', status: step > 1 ? 'complete' : 'current' },
     { name: 'Step 2', status: step > 2 ? 'complete' : step === 2 ? 'current' : 'upcoming' },
     { name: 'Step 3', status: step > 3 ? 'complete' : step === 3 ? 'current' : 'upcoming' },
-    { name: 'Step 4', status: step === 4 ? 'current' : 'upcoming' }
+    // { name: 'Step 4', status: step === 4 ? 'current' : 'upcoming' }
   ];
 
-  const filteredAirlines =
-    airlineQuery === ''
-      ? airlines
-      : airlines.filter((airline) => airline.name.toLowerCase().includes(airlineQuery.toLowerCase()));
 
-  const filteredFlights =
-    flightQuery === ''
-      ? (airline ? flightNumbers[airline.id] : [])
-      : (airline ? flightNumbers[airline.id].filter((flight) => flight.toLowerCase().includes(flightQuery.toLowerCase())) : []);
+  
 
   const handleNextStep = async () => {
     console.log("llega")
     if (step === 1) {
-      const data = {
-        airline: airlines[0],
-        flightNumber: 'DL1234',
-      };
+      // const data = {
+      //   airline: airlines[0],
+      //   flightNumber: 'DL1234',
+      // };
       
-      const flightInfo = await getFlightInfo(data.airline.id, data.flightNumber);
+      const flightInfo = await getFlightInfo(airline.id, flightNumber);
       console.log('flightInfo', flightInfo)
-      setFlightData(flightInfo);
+      setFlightData(flightInfo.data.flight_info[0]);
       console.log('whwhw')
-      setAirline(data.airline);
-      setFlightNumber(data.flightNumber);
+      // setAirline(data.airline);
+      // setFlightNumber(data.flightNumber);
+    }
+
+    else if (step === 2) {
+      console.log('whatfwfwfwwwfewtrgb')
+      const pred = await predictFlightDelay(flightData);
+      console.log('pred', pred)
+      setPrediction(pred.data.prediction);
+      setShapValues(pred.data.shapvalues)
+      setFeatureNames(pred.data.featurenames)
     }
     console.log(flightData);
     console.log({step});
@@ -162,13 +179,13 @@ function MultiStepForm() {
 
   useEffect(() => {
     if (step === 1) {
-      const data = {
-        airline: airlines[0],
-        flightNumber: 'DL1234',
-      };
+      // const data = {
+      //   airline: airlines[0],
+      //   flightNumber: 'DL1234',
+      // };
       
-      setAirline(data.airline);
-      setFlightNumber(data.flightNumber);
+      // setAirline(data.airline);
+      // setFlightNumber(data.flightNumber);
     }
 
     if (step === 2) {
@@ -189,8 +206,8 @@ function MultiStepForm() {
           windSpeed: '10 mph'
         }
       };
-      setAirline(data.airline);
-      setFlightNumber(data.flightNumber);
+      // setAirline(data.airline);
+      // setFlightNumber(data.flightNumber);
       setOrigin(data.origin);
       setDestination(data.destination);
       setWeekday(data.weekday);
@@ -207,7 +224,7 @@ function MultiStepForm() {
         shapValues: 'Feature 1: +0.3 | Feature 2: -0.2'
       };
       setModelResult(data.modelResult);
-      setShapValues(data.shapValues);
+      // setShapValues(data.shapValues);
     }
 
     if (step === 4) {
@@ -257,232 +274,25 @@ function MultiStepForm() {
         )}
 
         {step === 2 && (
-          <Step2 step={step} flightData={flightData} setStep={setStep} airline={airline} setAirline={setAirline} flightNumber={flightNumber} setFlightNumber={setFlightNumber} origin={origin} setOrigin={setOrigin} destination={destination} setDestination={setDestination} weather={weather} setWeather={setWeather} handleNextStep={handleNextStep} handleBackStep={handleBackStep} setAirlineQuery={setAirlineQuery} setFlightQuery={setFlightQuery} filteredAirlines={filteredAirlines} filteredFlights={filteredFlights} showAirlineModal={showAirlineModal} setShowAirlineModal={setShowAirlineModal} showWeatherModal={showWeatherModal} setShowWeatherModal={setShowWeatherModal} />
+          <Step2 setFlightData={setFlightData} flightData={flightData} setStep={setStep} airline={airline} flightNumber={flightNumber} weather={weather} setWeather={setWeather} handleNextStep={handleNextStep} handleBackStep={handleBackStep} setShowAirlineModal={setShowAirlineModal} setShowWeatherModal={setShowWeatherModal} />
           
         )}
 
         {step === 3 && (
-          <div className="step-container page-3 relative z-10">
-            <div className="image-placeholder">
-              <img src={image3} alt="Image 3" className="rounded-full w-36 h-36 object-cover mx-auto mb-5" />
-            </div>
-            <div className="results-container">
-              <div className="info-box results-box full-width">
-                <h3 className="info-title">Model Prediction</h3>
-                <p>Not Delayed</p>
-              </div>
-              <div className="info-box results-box full-width">
-                <h3 className="info-title">Delay Type</h3>
-                <p>Less than 15 minutes</p>
-              </div>
-            </div>
-            <div className="shap-container">
-              <div className="shap-box">
-                <h3 className="info-title">SHAP Values</h3>
-                <img src={shapImage} alt="SHAP Values" className="shap-image" />
-              </div>
-            </div>
-            <div className="button-container absolute bottom-0 left-5 right-5 pt-10">
-              <button
-                type="button"
-                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
-                onClick={handleBackStep}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
-                onClick={handleNextStep}
-              >
-                Get Insights
-              </button>
-            </div>
-          </div>
+          <Step3 prediction={prediction} shapValues={shapValues} featureNames={featureNames} handleNextStep={handleNextStep} handleBackStep={handleBackStep} />
+          
         )}
 
         {step === 4 && (
-          <div className="step-container page-4 relative z-10">
-            <div className="image-placeholder">
-              <img src={image4} alt="Image 4" className="rounded-full w-36 h-36 object-cover mx-auto mb-5" />
-            </div>
-            <div className="results-container4">
-              <div className="info-box results-box">
-                <h3 className="info-title">Actionable Insights</h3>
-                <p>{insights}</p>
-              </div>
-            </div>
-            <div className="button-container absolute bottom-0 left-5 right-5 pt-10">
-              <button
-                type="button"
-                className="rounded-full bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 mt-3"
-                onClick={handleBackStep}
-              >
-                Back
-              </button>
-            </div>
-          </div>
+          <Step4 handleBackStep={handleBackStep} insights={insights} />
         )}
 
         {showAirlineModal && (
-          <AirlineInfoModal setShowWeatherModal={setShowWeatherModal} airline={airline} flightData={flightData} setWeekday={setWeekday} setDepartureTime={setDepartureTime} setArrivalTime={setArrivalTime} setTurnaroundTime={setTurnaroundTime} />
+          <AirlineInfoModal setShowAirlineModal={setShowAirlineModal} airline={airline} flightData={flightData} setWeekday={setWeekday} setDepartureTime={setDepartureTime} setArrivalTime={setArrivalTime} setTurnaroundTime={setTurnaroundTime} />
         )}
 
         {showWeatherModal && (
-          <Modal title="Weather Information" onClose={() => setShowWeatherModal(false)}>
-            <div className="input-row-4">
-              <div className="input-group">
-                <label>Origin Altimeter Setting</label>
-                <input
-                  type="text"
-                  value={weather.originAltimeterSetting}
-                  onChange={(e) => setWeather({ ...weather, originAltimeterSetting: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Altimeter Setting</label>
-                <input
-                  type="text"
-                  value={weather.destinationAltimeterSetting}
-                  onChange={(e) => setWeather({ ...weather, destinationAltimeterSetting: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Origin Dew Point Temperature</label>
-                <input
-                  type="text"
-                  value={weather.originDewPointTemperature}
-                  onChange={(e) => setWeather({ ...weather, originDewPointTemperature: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Dew Point Temperature</label>
-                <input
-                  type="text"
-                  value={weather.destinationDewPointTemperature}
-                  onChange={(e) => setWeather({ ...weather, destinationDewPointTemperature: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-            </div>
-            <div className="input-row-4">
-              <div className="input-group">
-                <label>Origin Station Pressure</label>
-                <input
-                  type="text"
-                  value={weather.originStationPressure}
-                  onChange={(e) => setWeather({ ...weather, originStationPressure: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Station Pressure</label>
-                <input
-                  type="text"
-                  value={weather.destinationStationPressure}
-                  onChange={(e) => setWeather({ ...weather, destinationStationPressure: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Origin Wet Bulb Temperature</label>
-                <input
-                  type="text"
-                  value={weather.originWetBulbTemperature}
-                  onChange={(e) => setWeather({ ...weather, originWetBulbTemperature: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Wet Bulb Temperature</label>
-                <input
-                  type="text"
-                  value={weather.destinationWetBulbTemperature}
-                  onChange={(e) => setWeather({ ...weather, destinationWetBulbTemperature: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-            </div>
-            <div className="input-row-4">
-              <div className="input-group">
-                <label>Origin Dry Bulb Temperature</label>
-                <input
-                  type="text"
-                  value={weather.originDryBulbTemperature}
-                  onChange={(e) => setWeather({ ...weather, originDryBulbTemperature: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Dry Bulb Temperature</label>
-                <input
-                  type="text"
-                  value={weather.destinationDryBulbTemperature}
-                  onChange={(e) => setWeather({ ...weather, destinationDryBulbTemperature: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Origin Relative Humidity</label>
-                <input
-                  type="text"
-                  value={weather.originRelativeHumidity}
-                  onChange={(e) => setWeather({ ...weather, originRelativeHumidity: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Relative Humidity</label>
-                <input
-                  type="text"
-                  value={weather.destinationRelativeHumidity}
-                  onChange={(e) => setWeather({ ...weather, destinationRelativeHumidity: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-            </div>
-            <div className="input-row-4">
-              <div className="input-group">
-                <label>Origin Visibility</label>
-                <input
-                  type="text"
-                  value={weather.originVisibility}
-                  onChange={(e) => setWeather({ ...weather, originVisibility: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Visibility</label>
-                <input
-                  type="text"
-                  value={weather.destinationVisibility}
-                  onChange={(e) => setWeather({ ...weather, destinationVisibility: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Origin Wind Speed</label>
-                <input
-                  type="text"
-                  value={weather.originWindSpeed}
-                  onChange={(e) => setWeather({ ...weather, originWindSpeed: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-              <div className="input-group">
-                <label>Destination Wind Speed</label>
-                <input
-                  type="text"
-                  value={weather.destinationWindSpeed}
-                  onChange={(e) => setWeather({ ...weather, destinationWindSpeed: e.target.value })}
-                  className="info-input"
-                />
-              </div>
-            </div>
-          </Modal>
+          <WeatherInfoModel setShowWeatherModal={setShowWeatherModal} flightData={flightData} setFlightData={setFlightData} />
         )}
       </div>
 
