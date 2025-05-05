@@ -44,7 +44,7 @@ function MultiStepForm() {
   const [weather, setWeather] = useState({
     temperature: '',
     humidity: '',
-    windSpeed: '',
+    // windSpeed: '',
     // originAltimeterSetting: '',
     // destinationAltimeterSetting: '',
     // originDewPointTemperature: '',
@@ -74,7 +74,7 @@ function MultiStepForm() {
   const [turnaroundTime, setTurnaroundTime] = useState('');
   const [elapsedTime, setElapsedTime] = useState('');
   const [modelResult, setModelResult] = useState('');
-  const [shapValues, setShapValues] = useState('');
+  // const [shapValues, setShapValues] = useState('');
   const [insights, setInsights] = useState('');
   const [showAirlineModal, setShowAirlineModal] = useState(false);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
@@ -82,6 +82,9 @@ function MultiStepForm() {
   const [flightQuery, setFlightQuery] = useState('');
   const [flightData, setFlightData] = useState(null);
   const [prediction, setPrediction] = useState(null);
+  const [featureNames, setFeatureNames] = useState(null);
+  const [shapValues, setShapValues] = useState(null);
+
 
   const [filteredAirlines, setFilteredAirlines] = useState([]);
   const [filteredFlights, setFilteredFlights] = useState([]);
@@ -129,7 +132,7 @@ function MultiStepForm() {
     { name: 'Step 1', status: step > 1 ? 'complete' : 'current' },
     { name: 'Step 2', status: step > 2 ? 'complete' : step === 2 ? 'current' : 'upcoming' },
     { name: 'Step 3', status: step > 3 ? 'complete' : step === 3 ? 'current' : 'upcoming' },
-    { name: 'Step 4', status: step === 4 ? 'current' : 'upcoming' }
+    // { name: 'Step 4', status: step === 4 ? 'current' : 'upcoming' }
   ];
 
 
@@ -156,6 +159,8 @@ function MultiStepForm() {
       const pred = await predictFlightDelay(flightData);
       console.log('pred', pred)
       setPrediction(pred.data.prediction);
+      setShapValues(pred.data.shapvalues)
+      setFeatureNames(pred.data.featurenames)
     }
     console.log(flightData);
     console.log({step});
@@ -219,7 +224,7 @@ function MultiStepForm() {
         shapValues: 'Feature 1: +0.3 | Feature 2: -0.2'
       };
       setModelResult(data.modelResult);
-      setShapValues(data.shapValues);
+      // setShapValues(data.shapValues);
     }
 
     if (step === 4) {
@@ -269,12 +274,12 @@ function MultiStepForm() {
         )}
 
         {step === 2 && (
-          <Step2 step={step} setFlightData={setFlightData} flightData={flightData} setStep={setStep} airline={airline} setAirline={setAirline} flightNumber={flightNumber} setFlightNumber={setFlightNumber} origin={origin} setOrigin={setOrigin} destination={destination} setDestination={setDestination} weather={weather} setWeather={setWeather} handleNextStep={handleNextStep} handleBackStep={handleBackStep} setAirlineQuery={setAirlineQuery} setFlightQuery={setFlightQuery} filteredAirlines={filteredAirlines} filteredFlights={filteredFlights} showAirlineModal={showAirlineModal} setShowAirlineModal={setShowAirlineModal} showWeatherModal={showWeatherModal} setShowWeatherModal={setShowWeatherModal} />
+          <Step2 setFlightData={setFlightData} flightData={flightData} setStep={setStep} airline={airline} flightNumber={flightNumber} weather={weather} setWeather={setWeather} handleNextStep={handleNextStep} handleBackStep={handleBackStep} setShowAirlineModal={setShowAirlineModal} setShowWeatherModal={setShowWeatherModal} />
           
         )}
 
         {step === 3 && (
-          <Step3 prediction={prediction} handleNextStep={handleNextStep} handleBackStep={handleBackStep} />
+          <Step3 prediction={prediction} shapValues={shapValues} featureNames={featureNames} handleNextStep={handleNextStep} handleBackStep={handleBackStep} />
           
         )}
 

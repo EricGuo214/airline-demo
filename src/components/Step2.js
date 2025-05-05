@@ -3,27 +3,10 @@ import airlineImage from '../airline.jpg';
 import weatherImage from '../weather.png';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 
-const route = [
-    [40.6413, -73.7781],
-    [33.9416, -118.4085]
-  ];
 
-function Step2({step, airline, setAirline, flightNumber, setFlightNumber, origin, setOrigin, destination, setDestination, weather, setWeather, flightData, setAirlineQuery, setFlightQuery, filteredAirlines, filteredFlights, showAirlineModal, setShowAirlineModal, showWeatherModal, setShowWeatherModal, setStep, handleNextStep}) {
-    console.log('inside')
-    console.log(flightData);
-    console.log({airline});
-    console.log({flightNumber});
-    console.log('inside')
+function Step2({airline, flightNumber, weather, setWeather, flightData, setFlightData ,setShowAirlineModal, setShowWeatherModal, handleNextStep, handleBackStep}) {
 
 
-  
-    // const handleNextStep = () => {
-    //   setStep(3);
-    // }
-  
-    const handleBackStep = () => {
-      setStep(1);
-    }
     return (
       <>
       {(flightData) && (
@@ -51,7 +34,7 @@ function Step2({step, airline, setAirline, flightNumber, setFlightNumber, origin
                     <input
                       type="text"
                       value={airline?.name}
-                      onChange={(e) => setAirline(e.target.value)}
+                      onChange={(e) => setFlightData({ ...flightData, 'airline': e.target.value })}
                       className="info-input"
                       readOnly
                       disabled
@@ -62,7 +45,7 @@ function Step2({step, airline, setAirline, flightNumber, setFlightNumber, origin
                     <input
                       type="text"
                       value={flightNumber}
-                      onChange={(e) => setFlightNumber(e.target.value)}
+                      onChange={(e) => setFlightData({ ...flightData, 'flight_number': e.target.value })}
                       className="info-input"
                       readOnly
                       disabled
@@ -74,7 +57,7 @@ function Step2({step, airline, setAirline, flightNumber, setFlightNumber, origin
                     <input
                       type="text"
                       value={flightData.origin}
-                      onChange={(e) => setOrigin(e.target.value)}
+                      onChange={(e) => setFlightData({ ...flightData, 'origin': e.target.value })}
                       className="info-input"
                       readOnly
                       disabled
@@ -84,7 +67,7 @@ function Step2({step, airline, setAirline, flightNumber, setFlightNumber, origin
                     <label>Destination</label>
                     <input
                       value={flightData.destination}
-                      onChange={(e) => setDestination(e.target.value)}
+                      onChange={(e) => setFlightData({ ...flightData, 'destination': e.target.value })}
                       className="info-input"
                       readOnly
                       disabled
@@ -107,29 +90,29 @@ function Step2({step, airline, setAirline, flightNumber, setFlightNumber, origin
                 </div>
                 <div className="input-row h-12">
                   <div className="input-group">
-                    <label>Temperature</label>
+                    <label>Origin Wind Speed</label>
                     <input
                       type="text"
-                      value={weather.temperature}
-                      onChange={(e) => setWeather({ ...weather, temperature: e.target.value })}
+                      value={flightData.origin_HourlyWindSpeed}
+                      onChange={(e) => setFlightData({ ...flightData, 'origin_HourlyWindSpeed': e.target.value })}
                       className="info-input"
                     />
                   </div>
                   <div className="input-group">
-                    <label>Humidity</label>
+                    <label>Destination Wind Speed</label>
                     <input
                       type="text"
-                      value={weather.humidity}
-                      onChange={(e) => setWeather({ ...weather, humidity: e.target.value })}
+                      value={flightData.dest_HourlyWindSpeed}
+                      onChange={(e) => setFlightData({ ...flightData, 'dest_HourlyWindSpeed': e.target.value })}
                       className="info-input"
                     />
                   </div>
                   <div className="input-group">
-                    <label>Wind Speed</label>
+                    <label>Origin Visibility</label>
                     <input
                       type="text"
-                      value={weather.windSpeed}
-                      onChange={(e) => setWeather({ ...weather, windSpeed: e.target.value })}
+                      value={flightData.origin_HourlyVisibility}
+                      onChange={(e) => setFlightData({ ...flightData, 'origin_HourlyVisibility': e.target.value })}
                       className="info-input"
                     />
                   </div>
